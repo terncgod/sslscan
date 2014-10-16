@@ -361,6 +361,13 @@ int tcpConnect(struct sslCheckOptions *options)
         sendString(socketDescriptor, "STARTTLS\r\n");
         if (!readOrLogAndClose(socketDescriptor, buffer, BUFFERSIZE, options))
             return 0;
+
+        // Some SMTP servers will send the EHLO response in two parts, so if we get another 250, read again
+        if (strncmp(buffer, "250", 3) == 0)
+        {
+            if (!readOrLogAndClose(socketDescriptor, buffer, BUFFERSIZE, options))
+                return 0;
+        }
         if (strncmp(buffer, "220", 3) != 0)
         {
             close(socketDescriptor);
