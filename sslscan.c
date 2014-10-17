@@ -347,6 +347,7 @@ int tcpConnect(struct sslCheckOptions *options)
         {
             close(socketDescriptor);
             printf("%s    ERROR: The host %s on port %d did not appear to be an SMTP service.%s\n", COL_RED, options->host, options->port, RESET);
+            printf_verbose("%sOutput%s\n%s", COL_RED, RESET, buffer);
             return 0;
         }
         sendString(socketDescriptor, "EHLO example.org\r\n");
@@ -356,6 +357,7 @@ int tcpConnect(struct sslCheckOptions *options)
         {
             close(socketDescriptor);
             printf("%s    ERROR: The SMTP service on %s port %d did not respond with status 250 to our HELO.%s\n", COL_RED, options->host, options->port, RESET);
+            printf_verbose("%sOutput%s\n%s", COL_RED, RESET, buffer);
             return 0;
         }
         sendString(socketDescriptor, "STARTTLS\r\n");
@@ -372,6 +374,7 @@ int tcpConnect(struct sslCheckOptions *options)
         {
             close(socketDescriptor);
             printf("%s    ERROR: The SMTP service on %s port %d did not appear to support STARTTLS.%s\n", COL_RED, options->host, options->port, RESET);
+            printf_verbose("%sOutput%s\n%s", COL_RED, RESET, buffer);
             return 0;
         }
         if (options->sslVersion == ssl_v3 || options->sslVersion == ssl_all)
