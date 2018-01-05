@@ -35,7 +35,7 @@ ifndef CC
   $(error "Failed to determine the compiler!")
 endif
 
-.PHONY: clean
+.PHONY: clean compile_manifest
 
 # Enable security options like stack protectors and variable formatting checks.
 # Sadly, we can't use -pie, because MinGW produces a broken executable when
@@ -49,8 +49,11 @@ CFLAGS += -Iopenssl_mingw/include -D__USE_GNU
 LDFLAGS += -lws2_32 -lgdi32
 
 # Set the version string for the program.
-VERSION = "$(shell grep -E -o -m 1 "[0-9]+\.[0-9]+\.[0-9]+" Changelog) Windows $(ARCHITECTURE) (Mingw)"
+VERSION = $(shell grep -E -o -m 1 "[0-9]+\.[0-9]+\.[0-9]+" Changelog)
+VERSION_STR = "$(VERSION) Windows $(ARCHITECTURE) (Mingw)"
 
+# The compiled manifest file (for 64-bit builds only).
+SSLSCAN_RC=
 
 all: sslscan
 
@@ -82,11 +85,23 @@ openssl_mingw/libcrypto.a: openssl_mingw/Makefile
 	$(MAKE) -C openssl_mingw depend
 	$(MAKE) -j 10 -C openssl_mingw all
 
-sslscan: openssl_mingw/libcrypto.a sslscan.c
-	$(CC) $(CFLAGS) -DVERSION=\"$(VERSION)\" $(DEFINES) $(SECURITY_OPTIONS) $(LINK_OPTIONS) -o sslscan.exe sslscan.c openssl_mingw/libssl.a openssl_mingw/libcrypto.a zlib_mingw/libz.a $(LDFLAGS)
+# For 64-bit builds, compile the manifest for the application.  This allows
+# the application to check the OS version at run-time and determine if
+# colorized output is appropriate.
+compile_manifest:
+ifeq ($(ARCHITECTURE), 64-bit)
+	rm -f sslscan_rc.o
+	cp sslscan.manifest_template sslscan.exe.manifest
+	sed -i "s/VERSIONGOESHERE/$(VERSION).0/" sslscan.exe.manifest
+	$(CC_PREFIX)windres --input sslscan.rc --output sslscan_rc.o
+	$(eval SSLSCAN_RC=sslscan_rc.o)
+endif
+
+sslscan: openssl_mingw/libcrypto.a sslscan.c compile_manifest
+	$(CC) $(CFLAGS) -DVERSION=\"$(VERSION_STR)\" $(DEFINES) $(SECURITY_OPTIONS) $(LINK_OPTIONS) -o sslscan.exe sslscan.c openssl_mingw/libssl.a openssl_mingw/libcrypto.a zlib_mingw/libz.a $(SSLSCAN_RC) $(LDFLAGS)
 	$(CC_PREFIX)strip sslscan.exe
 
 clean:
-	rm -f *.o sslscan.exe .openssl_mingw.is.fresh
+	rm -f *.o sslscan.exe .openssl_mingw.is.fresh sslscan.exe.manifest
 	if [ -f openssl_mingw/Makefile ]; then $(MAKE) -C openssl_mingw clean; fi
 	if [ -f zlib_mingw/win32/Makefile.gcc ]; then $(MAKE) -C zlib_mingw -f win32/Makefile.gcc clean; fi

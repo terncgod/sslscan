@@ -77,6 +77,7 @@
         } \
     } while (0)
   #endif
+  BOOL isWindows10OrLater(void);
 #else
   #include <netdb.h>
   #include <sys/socket.h>
@@ -3448,6 +3449,18 @@ int main(int argc, char *argv[])
     options.sslVersion = ssl_all;
 
 #ifdef _WIN32
+    /* Disable color output if OS isn't Windows 10 or later. */
+    if (!isWindows10OrLater()) {
+        RESET = "";
+        COL_RED = "";
+        COL_YELLOW = "";
+        COL_BLUE = "";
+        COL_GREEN = "";
+        COL_PURPLE = "";
+        COL_GREY = "";
+        COL_RED_BG = "";
+    }
+
     wVersionRequested = MAKEWORD(2, 2);
     err = WSAStartup(wVersionRequested, &wsaData);
     if (err != 0)
@@ -4028,6 +4041,20 @@ void *memmem(const void *haystack_start, size_t haystack_len, const void *needle
     }
   return NULL;
 }
+
+/* Returns non-zero if OS is Windows 10 or later, otherwise returns zero. */
+BOOL isWindows10OrLater(void) {
+  OSVERSIONINFOEX osvi;
+  DWORDLONG dwlConditionMask = 0;
+
+  ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+  osvi.dwMajorVersion = 10;
+
+  VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+  return VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
+}
+
 #endif
 
 /* vim :set ts=4 sw=4 sts=4 et : */

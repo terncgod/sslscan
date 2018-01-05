@@ -2,6 +2,12 @@
 *.o
 *.obj
 
+# temporary files
+*~
+
+# windows manifest
+sslscan.exe.manifest
+
 # compiled binary
 sslscan
 sslscan.exe
