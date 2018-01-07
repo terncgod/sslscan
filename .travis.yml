@@ -4,7 +4,7 @@ language: c
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq mingw-w64
+  - sudo apt-get install -qq mingw-w64 mingw32
 
 script:
   - make sslscan CC=clang
@@ -14,3 +14,4 @@ script:
   #- make static CC=clang
   - make static CC=gcc
   - make -f Makefile.mingw
+  - make -f Makefile.mingw BUILD_32BIT=1
